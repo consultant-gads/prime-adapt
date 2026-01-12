@@ -130,8 +130,7 @@
                     <h2 class="text-xl font-bold text-slate-800 mb-6 leading-snug">À quel moment souhaitez-vous débuter les travaux ?</h2>
                     <div class="choice-btn" onclick="saveData('urgence', 'ASAP')"><span>Le plus tôt possible (Urgent)</span><i class="fa-solid fa-bolt"></i></div>
                     <div class="choice-btn" onclick="saveData('urgence', '3-6 mois')"><span>D'ici 3 à 6 mois</span><i class="fa-solid fa-calendar"></i></div>
-                    <div class="choice-btn" onclick="saveData('urgence', 'Année pro')"><span>C'est pour l'année prochaine</span><i class="fa-solid fa-clock"></i></div>
-                    <div class="choice-btn text-slate-400" onclick="saveData('urgence', 'Info')"><span>Je souhaite simplement me renseigner</span><i class="fa-solid fa-info"></i></div>
+                    <div class="choice-btn" onclick="saveData('urgence', '6 mois +')"><span>Dans 6 mois et plus</span><i class="fa-solid fa-clock"></i></div>
                 </div>
 
                 <div class="step" id="stepFinal">
@@ -161,21 +160,29 @@
 
                 <div class="step" id="stepResult">
                     <div class="text-center">
-                        <div class="inline-flex items-center justify-center w-20 h-20 bg-green-100 text-green-600 rounded-full mb-6"><i class="fa-solid fa-sack-dollar text-3xl"></i></div>
+                        <div class="inline-flex items-center justify-center w-20 h-20 bg-green-100 text-green-600 rounded-full mb-6"><i class="fa-solid fa-check text-3xl"></i></div>
                         <h2 class="text-2xl font-bold text-slate-800 mb-2">Estimation Terminée</h2>
-                        <div class="bg-blue-50 border-2 border-blue-600 rounded-3xl p-8 mb-8 mt-6">
+                        <div class="bg-blue-50 border-2 border-blue-600 rounded-3xl p-8 mb-6 mt-6">
                             <span id="montantAide" class="text-5xl font-black text-blue-600 leading-none">0 €</span>
                         </div>
-                        <p class="text-xs text-slate-600 italic px-6">Un conseiller vous contactera prochainement.</p>
+                        <p class="text-slate-600 text-sm px-4 leading-relaxed mb-4">
+                            Merci pour votre confiance. Nous vous recontactons <span class="font-bold">dans les meilleurs délais</span> pour affiner votre projet et vous proposer le meilleur devis.
+                        </p>
                     </div>
                 </div>
             </div>
-            <button id="backBtn" onclick="prevStep()" class="mt-8 text-[10px] font-bold text-gray-400 uppercase tracking-widest hidden hover:text-blue-600 transition-colors"><i class="fa-solid fa-arrow-left mr-2"></i>Retour</button>
+
+            <div id="reassuranceFooter" class="flex items-center justify-center gap-4 text-[10px] text-gray-400 border-t pt-4 mt-6">
+                <span class="flex items-center gap-1"><i class="fa-solid fa-lock text-[9px]"></i> Sans engagement</span>
+                <span class="text-gray-300">•</span>
+                <span class="flex items-center gap-1"><i class="fa-solid fa-circle-check text-[9px]"></i> Gratuit</span>
+            </div>
+
+            <button id="backBtn" onclick="prevStep()" class="mt-6 text-[10px] font-bold text-gray-400 uppercase tracking-widest hidden hover:text-blue-600 transition-colors"><i class="fa-solid fa-arrow-left mr-2"></i>Retour</button>
         </div>
     </div>
 
     <script>
-        // Initialisation EmailJS
         (function(){ emailjs.init("JS4O3kRt63JPjwHYO"); })();
 
         let currentStep = 1;
@@ -235,36 +242,23 @@
             const montantTexte = montant.toLocaleString() + " €";
             const travaux = Array.from(document.querySelectorAll('input[name="work"]:checked')).map(el => el.value).join(', ');
 
-            // Préparation des données complètes
             const params = {
-                name: nom.value,
-                email: email.value,
-                tel: tel.value,
-                age: responses.age,
-                statut: responses.statut,
-                cp: responses.cp,
-                foyer: responses.foyer,
-                revenus: responses.revenu,
-                travaux: travaux,
-                handicap: responses.handicap,
-                urgence: responses.urgence,
+                name: nom.value, email: email.value, tel: tel.value,
+                age: responses.age, statut: responses.statut, cp: responses.cp,
+                foyer: responses.foyer, revenus: responses.revenu,
+                travaux: travaux, handicap: responses.handicap, urgence: responses.urgence,
                 aide: montantTexte
             };
 
-            // 1. Envoi vers Google Sheet (Méthode Directe)
             fetch("https://script.google.com/macros/s/AKfycbwwfnRjFgphSFc0bOyoyWTVkF_OvBSL2kZiBT90v4J6BMe2e8y6QSeV75j_dqUYCTTr/exec", {
-                method: "POST",
-                mode: "no-cors", // Nécessaire pour Apps Script
-                headers: { "Content-Type": "application/json" },
+                method: "POST", mode: "no-cors", headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(params)
             });
 
-            // 2. Envoi vers EmailJS
             emailjs.send("service_5fff439", "template_dcj11iv", params)
                 .then(() => {
                     document.getElementById('montantAide').innerText = montantTexte;
-                    currentStep = 10; 
-                    updateUI();
+                    currentStep = 10; updateUI();
                 }, (err) => {
                     alert("Erreur lors de l'envoi. Veuillez réessayer.");
                     console.error(err);
@@ -274,8 +268,18 @@
         function updateUI() {
             const steps = document.querySelectorAll('.step');
             steps.forEach((s, i) => { const stepNum = (i === 9) ? 10 : i + 1; s.classList.toggle('active', stepNum === currentStep); });
-            if(currentStep === 10) { document.getElementById('headerContent').classList.add('hidden'); document.getElementById('stepCounter').innerText = "Résultat"; document.getElementById('progressBar').style.width = '100%'; document.getElementById('backBtn').classList.add('hidden'); } 
-            else { document.getElementById('headerContent').classList.remove('hidden'); document.getElementById('progressBar').style.width = (Math.min(currentStep, 9) / 9 * 100) + '%'; document.getElementById('stepCounter').innerText = currentStep <= 8 ? `Question ${currentStep} / 8` : "Dernière étape"; document.getElementById('backBtn').classList.toggle('hidden', currentStep === 1); }
+            if(currentStep === 10) { 
+                document.getElementById('headerContent').classList.add('hidden'); 
+                document.getElementById('stepCounter').innerText = "Résultat"; 
+                document.getElementById('progressBar').style.width = '100%'; 
+                document.getElementById('backBtn').classList.add('hidden'); 
+            } 
+            else { 
+                document.getElementById('headerContent').classList.remove('hidden'); 
+                document.getElementById('progressBar').style.width = (Math.min(currentStep, 9) / 9 * 100) + '%'; 
+                document.getElementById('stepCounter').innerText = currentStep <= 8 ? `Question ${currentStep} / 8` : "Dernière étape"; 
+                document.getElementById('backBtn').classList.toggle('hidden', currentStep === 1); 
+            }
         }
     </script>
 </body>
